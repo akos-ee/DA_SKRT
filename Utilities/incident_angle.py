@@ -1,45 +1,32 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov  7 11:45:21 2023
+Created on Tue Nov 7 11:45:21 2023
 
 @author: yajiluck
 """
 
-import wave
 import numpy as np
-import simpleaudio as sa
+import sounddevice as sd
+from scipy.io import wavfile
 
 class WaveAnalyzer:
     def __init__(self, wav_file_path):
         self.wav_file_path = wav_file_path
-        self.sample_rate, self.n_channels, self.sample_width, self.n_frames, self.data = self.wav_to_numpy_array()
+        self.sample_rate, self.data = self.wav_to_numpy_array()
+        self.n_channels = self.data.shape[1] if self.data.ndim > 1 else 1
+        self.sample_width = self.data.dtype.itemsize
+        self.n_frames = self.data.shape[0]
 
     def wav_to_numpy_array(self):
-        # Open the WAV file
-        with wave.open(self.wav_file_path, 'rb') as wav_file:
-            sample_rate = wav_file.getframerate()
-            n_channels = wav_file.getnchannels()
-            sample_width = wav_file.getsampwidth()
-            n_frames = wav_file.getnframes()
-            frames = wav_file.readframes(n_frames)
-            
-            dtype_map = {1: np.int8, 2: np.int16, 4: np.int32}
-            if sample_width in dtype_map:
-                dtype = dtype_map[sample_width]
-            else:
-                raise ValueError(f"Unsupported sample width: {sample_width}")
-            data = np.frombuffer(frames, dtype=dtype)
-            
-            if n_channels > 1:
-                data = data.reshape(-1, n_channels)
-            return sample_rate, n_channels, sample_width, n_frames, data
+        # Use scipy.io.wavfile to read the WAV file
+        sample_rate, data = wavfile.read(self.wav_file_path)
+        # No need to reshape data, scipy.io.wavfile already returns a numpy array
+        return sample_rate, data
 
     def play(self):
-        # Convert numpy array to bytes
-        audio_data = self.data.tobytes()
-        # Play audio
-        play_obj = sa.play_buffer(audio_data, self.n_channels, self.sample_width, self.sample_rate)
-        play_obj.wait_done()
+        # Directly play numpy array
+        sd.play(self.data, self.sample_rate)
+        sd.wait()  # Wait until the audio has finished playing
 
 # Example usage
 wav_path = 'test_sound.wav'  # Replace with your WAV file path
