@@ -29,6 +29,6 @@ class WaveAnalyzer:
         sd.wait()  # Wait until the audio has finished playing
 
 # Example usage
-wav_path = 'test_sound.wav'  # Replace with your WAV file path
-analyzer = WaveAnalyzer(wav_path)
-analyzer.play()
+# wav_path = 'test_sound.wav'  # Replace with your WAV file path
+# analyzer = WaveAnalyzer(wav_path)
+# analyzer.play()

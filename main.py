@@ -2,6 +2,7 @@
 
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from Utilities.incident_angle import WaveAnalyzer
 
 
 def print_hi(name):
@@ -11,6 +12,7 @@ def print_hi(name):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('Yajiv')
-
+    wav_path = '/Users/akosborbath/Documents/Soundskrit/DA/DA_SKRT/Utilities/test_sound.wav'  # Replace with your WAV file path
+    analyzer = WaveAnalyzer(wav_path)
+    analyzer.play()
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
