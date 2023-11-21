@@ -4,6 +4,9 @@ from scipy.io import wavfile
 import os
 import matplotlib.pyplot as plt
 
+
+
+
 class WaveAnalyzer:
     def __init__(self, degree):
         #This degree is the 'real' angle that the measurements were taken from
@@ -26,12 +29,18 @@ class WaveAnalyzer:
         sd.wait()
 
     #Normalizes an array so that its maximum value is 1 
-    def normalize(self, array):
-        max_value = np.max(array)
+    def normalize(self):
+        
+        max_value = max(np.max(self.x),np.max(self.y),np.max(self.w))
+        
         if max_value != 0:
-            return array / max_value
+            self.x /= max_value
+            self.y /= max_value
+            self.w /= max_value
+            
         else:
-            return array
+            print('normalizing error')
+
 
     #Given a degree value, this sets the current wave analyzer x,y, and w channel
     #With their respective measurements (normalized)
@@ -49,13 +58,26 @@ class WaveAnalyzer:
 
             sample_rate, data = self.wav_to_numpy_array(file_path)
             if data is not None:
-                normalized_data = self.normalize(data)
                 if channel == 'X':
-                    self.x = normalized_data
+                    self.x = data.astype(np.float64)
                 elif channel == 'Y':
-                    self.y = normalized_data
+                    self.y = data.astype(np.float64)
                 elif channel == 'W':
-                    self.w = normalized_data
+                    self.w = data.astype(np.float64)
+                    
+                
+        min_data_length = min(len(self.x),len(self.y),len(self.w))
+        
+        #Crop so all samples have same length (smallest available)
+        self.x = self.x[:min_data_length]
+        self.y = self.y[:min_data_length]
+        self.w = self.w[:min_data_length]
+        #To be used later
+        self.sample_rate = sample_rate
+            
+                    
+        self.normalize()
+        
     
     #TODO equalize if necessary, not sure how to implement this yet, but we have access
     # to self.x, self.y, and self.w to work it out
@@ -65,76 +87,77 @@ class WaveAnalyzer:
     
     #Function that predicts the incident angle of the measurement given relative weights to channel
     #x and y of the current measurements.
-    def predict_angle(self):
-        # Initialize variables
-        max_theta = 0
-        max_value = -np.inf
-        current_max = -np.inf
+    def predict_angle(self, x, y, w):
+       # x, y, and w are expected to be 2D arrays of shape (num_slices, slice_size)
 
-        # To store theta and corresponding max values for plotting
-        theta_values = []
-        max_values = []
+       num_slices = x.shape[0]
+       theta_range = np.linspace(0, 2*np.pi, num=360)
 
-        # Iterate over a range of angles (in radians)
-        for theta in np.linspace(0, 2*np.pi, num=360):
-            wx = np.cos(theta)
-            wy = np.sin(theta)
+       # Initialize arrays to store max_theta and max_value for each slice
+       max_thetas = np.zeros(num_slices)
+       max_values = -np.inf * np.ones(num_slices)
 
-            # Perform dot product
-            dot_product = np.dot(self.x, wx) + np.dot(self.y, wy)
+       for i, theta in enumerate(theta_range):
+           wx = np.cos(theta)
+           wy = np.sin(theta)
 
-            # Find maximum value
-            #current_max = np.max(dot_product)
+           # Perform dot product for all slices
+           dot_products = wx * x + wy * y  # This will be a 2D array
 
-            #Use mean as metric for "max" values
-            current_max = np.mean(dot_product)
+           # Use mean as metric for "max" values
+           current_maxs = np.mean(np.abs(dot_products), axis=1)
 
-            # Storing values for plotting
-            theta_values.append(theta)
-            max_values.append(current_max)
+           # Update max_theta and max_value if a new maximum is found
+           update_mask = current_maxs > max_values
+           max_thetas[update_mask] = theta
+           max_values[update_mask] = current_maxs[update_mask]
 
-            # Update max_theta and max_value if a new maximum is found
-            if current_max > max_value:
-                max_theta = theta
-                max_value = current_max
+       # Adjust angles based on w
+       max_measurements = np.cos(max_thetas[:, np.newaxis]) * x + np.sin(max_thetas[:, np.newaxis]) * y
+       add_w = max_measurements + w
+       sub_w = max_measurements - w
 
-            # # Check if the difference is less than the threshold
-            # if np.abs(current_max - max_value) < threshold:
-            #     break
+       complement = np.mean(add_w, axis=1) > np.mean(sub_w, axis=1)
+       max_thetas[complement] = (max_thetas[complement] + np.pi) % (2 * np.pi)
 
-        # Plotting
-        plt.plot(theta_values, max_values)
-        plt.xlabel('Theta (radians)')
-        plt.ylabel('Maximum Dot Product Value')
-        plt.title(f'Max Value vs Theta {self.degree}')
-        plt.show()
+       # Convert radians to degrees
+       max_thetas_degrees = np.rad2deg(max_thetas)
 
-        # Set the current "maximum" and its corresponding theta
-        self.maximum = max_value
-        self.max_theta = max_theta * 180 / np.pi
-
-        return self.max_theta, self.maximum 
+       # Return maximum theta for each slice
+       return max_thetas_degrees
     
     
-    
+    def theta_time(self, slice_size):
+        # Ensure all arrays are the same length and divisible by slice_size
+        min_length = min(len(self.x), len(self.y), len(self.w))
+        num_slices = min_length // slice_size
+
+        # Truncate arrays to make them divisible by slice_size
+        x_truncated = self.x[:num_slices * slice_size]
+        y_truncated = self.y[:num_slices * slice_size]
+        w_truncated = self.w[:num_slices * slice_size]
+
+        # Reshape arrays into (num_slices, slice_size)
+        x_reshaped = x_truncated.reshape(num_slices, slice_size)
+        y_reshaped = y_truncated.reshape(num_slices, slice_size)
+        w_reshaped = w_truncated.reshape(num_slices, slice_size)
+
+        # Vectorized operation to predict angles for all slices
+        # This requires modifying predict_angle to accept and process 2D arrays
+        predicted_thetas = self.predict_angle(x_reshaped, y_reshaped, w_reshaped)
+
+        return predicted_thetas
+        
+        
+        
+        
+        
+        
    
     
+   
+analyzer = WaveAnalyzer(135)
+    
+thetas = analyzer.theta_time(slice_size = len(analyzer.x)//12000)
     
     
-
-# Example usage
-analyzer = WaveAnalyzer(degree=0)
-# To play, use: analyzer.play(analyzer.x, sample_rate) # assuming sample_rate is defined
-
-max_theta, max_value = analyzer.predict_angle()
-
-print('max_theta',max_theta, 'max_value',max_value)
-
-# Example usage
-analyzer = WaveAnalyzer(degree=270)
-# To play, use: analyzer.play(analyzer.x, sample_rate) # assuming sample_rate is defined
-
-max_theta, max_value = analyzer.predict_angle()
-
-print('max_theta',max_theta, 'max_value',max_value)
-
