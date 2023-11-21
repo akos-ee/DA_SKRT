@@ -18,7 +18,7 @@ def findangle(arrs):
     error=5 #degrees
     weightx=math.cos(math.radians(45))
     weighty=math.cos(math.radians(45))
-    angle=0
+    angle=45
     maxi=0
     while True:
 
