@@ -8,11 +8,15 @@ import matplotlib.pyplot as plt
 
 
 class WaveAnalyzer:
-    def __init__(self, degree):
+    def __init__(self, degree, time_step = 0.25):
         #This degree is the 'real' angle that the measurements were taken from
         self.degree = degree
         #This will set self.x,self.y and self.w (3 channel measurements for the current degree)
         self.get_channels(degree=degree)
+        
+        #Time step between slices
+        self.time_step = time_step
+        
 
     #Converts a wave file (given its path) to a numpy array
     def wav_to_numpy_array(self, wav_file_path):
@@ -89,13 +93,14 @@ class WaveAnalyzer:
     #x and y of the current measurements.
     def predict_angle(self, x, y, w):
        # x, y, and w are expected to be 2D arrays of shape (num_slices, slice_size)
-
-       num_slices = x.shape[0]
+              
+       num_slices = x.shape[0] 
        theta_range = np.linspace(0, 2*np.pi, num=360)
 
        # Initialize arrays to store max_theta and max_value for each slice
        max_thetas = np.zeros(num_slices)
        max_values = -np.inf * np.ones(num_slices)
+ 
 
        for i, theta in enumerate(theta_range):
            wx = np.cos(theta)
@@ -105,7 +110,9 @@ class WaveAnalyzer:
            dot_products = wx * x + wy * y  # This will be a 2D array
 
            # Use mean as metric for "max" values
-           current_maxs = np.mean(np.abs(dot_products), axis=1)
+           #current_maxs = np.mean((dot_products), axis=1)
+           
+           current_maxs = np.max((dot_products), axis=1)
 
            # Update max_theta and max_value if a new maximum is found
            update_mask = current_maxs > max_values
@@ -114,21 +121,24 @@ class WaveAnalyzer:
 
        # Adjust angles based on w
        max_measurements = np.cos(max_thetas[:, np.newaxis]) * x + np.sin(max_thetas[:, np.newaxis]) * y
-       add_w = max_measurements + w
-       sub_w = max_measurements - w
+       add_w = np.abs(max_measurements + w)
+       sub_w = np.abs(max_measurements - w)
 
-       complement = np.mean(add_w, axis=1) > np.mean(sub_w, axis=1)
+       complement = np.mean(add_w, axis=1) <= np.mean(sub_w, axis=1)
        max_thetas[complement] = (max_thetas[complement] + np.pi) % (2 * np.pi)
 
        # Convert radians to degrees
        max_thetas_degrees = np.rad2deg(max_thetas)
+       
 
        # Return maximum theta for each slice
        return max_thetas_degrees
     
     
-    def theta_time(self, slice_size):
-        # Ensure all arrays are the same length and divisible by slice_size
+    def theta_time(self):
+        slice_size = int(self.sample_rate * self.time_step)
+        
+        # Calculate the number of complete slices for each array
         min_length = min(len(self.x), len(self.y), len(self.w))
         num_slices = min_length // slice_size
 
@@ -143,21 +153,52 @@ class WaveAnalyzer:
         w_reshaped = w_truncated.reshape(num_slices, slice_size)
 
         # Vectorized operation to predict angles for all slices
-        # This requires modifying predict_angle to accept and process 2D arrays
         predicted_thetas = self.predict_angle(x_reshaped, y_reshaped, w_reshaped)
+
+        self.predicted_thetas = predicted_thetas
 
         return predicted_thetas
         
         
         
+    def plot_theta(self):
+        num_slices = len(self.x) // int(self.sample_rate * self.time_step)
         
+        predicted_thetas = self.theta_time()
+
+        times = np.arange(len(self.predicted_thetas)).astype(np.float64)
+        
+        times *= self.time_step
+        
+        
+        print(len(self.predicted_thetas) , len(times))
+
+        # Ensure predicted_thetas has the same number of elements as times
+        if len(self.predicted_thetas) != len(times):
+            
+        
+            print("Error: Mismatch in the length of predicted_thetas and times.")
+            return
+
+        # Plotting
+        plt.plot(times, self.predicted_thetas)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Theta (degrees)')
+        plt.title(f'Theta vs Time {self.degree}')
+        plt.grid(True)
+        plt.show()
+
+         
         
         
    
     
    
-analyzer = WaveAnalyzer(135)
+analyzer = WaveAnalyzer(900)
     
-thetas = analyzer.theta_time(slice_size = len(analyzer.x)//12000)
+thetas = analyzer.theta_time()
+
+
+analyzer.plot_theta()
     
     
