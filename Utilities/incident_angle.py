@@ -48,7 +48,7 @@ class WaveAnalyzer:
 
     #Given a degree value, this sets the current wave analyzer x,y, and w channel
     #With their respective measurements (normalized)
-    def get_channels(self, degree, folder='Measurements/'):
+    def get_channels(self, degree, folder='Utilities/Measurements/'):
         valid_channels = ['X', 'Y', 'W']
         file_directory = os.path.join(folder, f"{degree}deg")
 
@@ -158,9 +158,22 @@ class WaveAnalyzer:
         self.predicted_thetas = predicted_thetas
 
         return predicted_thetas
-        
-        
-        
+
+    def filter(self, arr):
+        i = 0
+        avg=np.mean(arr)
+        print(avg)
+        while i < len(arr):
+
+            if arr[i] > (avg+5) or arr[i] < (avg-5):
+                arr[i] = avg
+            if i > 5 and i + 2 < len(arr):
+                subarr = arr[i - 3:i + 2]
+                arr[i] = np.mean(subarr)
+
+            i = i + 1
+
+        return arr
     def plot_theta(self):
         num_slices = len(self.x) // int(self.sample_rate * self.time_step)
         
@@ -171,7 +184,7 @@ class WaveAnalyzer:
         times *= self.time_step
         
         
-        print(len(self.predicted_thetas) , len(times))
+        # print(len(self.predicted_thetas) , len(times))
 
         # Ensure predicted_thetas has the same number of elements as times
         if len(self.predicted_thetas) != len(times):
@@ -181,7 +194,7 @@ class WaveAnalyzer:
             return
 
         # Plotting
-        plt.plot(times, self.predicted_thetas)
+        plt.plot(times, self.filter(self.predicted_thetas))#filter
         plt.xlabel('Time (s)')
         plt.ylabel('Theta (degrees)')
         plt.title(f'Theta vs Time {self.degree}')
@@ -189,16 +202,14 @@ class WaveAnalyzer:
         plt.show()
 
          
-        
-        
-   
+
     
    
-analyzer = WaveAnalyzer(900)
-    
-thetas = analyzer.theta_time()
-
-
-analyzer.plot_theta()
+# analyzer = WaveAnalyzer(135)
+#
+# thetas = analyzer.theta_time()
+#
+#
+# analyzer.plot_theta()
     
     

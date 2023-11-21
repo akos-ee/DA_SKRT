@@ -4,6 +4,8 @@
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 import this
 
+import numpy as np
+
 from Utilities.incident_angle import WaveAnalyzer
 import os
 import numpy
@@ -74,17 +76,26 @@ def get3chanarr(folder):
 
 
     return arrs
+
 if __name__ == '__main__':
         # wav_path = '/Users/akosborbath/Documents/Soundskrit/DA/DA_SKRT/Utilities/led ring 1kHz 0deg.wav'  # Replace with your WAV file path
     # analyzer = WaveAnalyzer(wav_path)
     # x = analyzer.wav_to_numpy_array()
     # sig = x[1]
 
-    sigs = get3chanarr("/Users/akosborbath/Documents/Soundskrit/DA/DA_SKRT/Utilities")
+    # sigs = get3chanarr("/Users/akosborbath/Documents/Soundskrit/DA/DA_SKRT/Utilities")
+    #
+    # # print(math.degrees(numpy.arcsin(1)))
+    # angle = findangle(sigs)
+    # print(angle)
 
-    # print(math.degrees(numpy.arcsin(1)))
-    angle = findangle(sigs)
-    print(angle)
+        analyzer = WaveAnalyzer(135)
 
+        thetas = analyzer.theta_time()
+        # analyzer.predicted_thetas = analyzer.filter(analyzer.predicted_thetas)
+        # print(analyzer.filter(analyzer.predicted_thetas))
+        # print(analyzer.predicted_thetas)
+
+        analyzer.plot_theta()
 
 
