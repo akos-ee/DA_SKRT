@@ -2,6 +2,7 @@ import numpy as np
 import sounddevice as sd
 from scipy.io import wavfile
 import os
+import matplotlib.pyplot as plt
 
 class WaveAnalyzer:
     def __init__(self, degree):
@@ -35,7 +36,7 @@ class WaveAnalyzer:
     #Given a degree value, this sets the current wave analyzer x,y, and w channel
     #With their respective measurements (normalized)
     def get_channels(self, degree, folder='Measurements/'):
-        valid_channels = ['x', 'y', 'w']
+        valid_channels = ['X', 'Y', 'W']
         file_directory = os.path.join(folder, f"{degree}deg")
 
         for file in os.listdir(file_directory):
@@ -49,11 +50,11 @@ class WaveAnalyzer:
             sample_rate, data = self.wav_to_numpy_array(file_path)
             if data is not None:
                 normalized_data = self.normalize(data)
-                if channel == 'x':
+                if channel == 'X':
                     self.x = normalized_data
-                elif channel == 'y':
+                elif channel == 'Y':
                     self.y = normalized_data
-                elif channel == 'w':
+                elif channel == 'W':
                     self.w = normalized_data
     
     #TODO equalize if necessary, not sure how to implement this yet, but we have access
@@ -64,11 +65,15 @@ class WaveAnalyzer:
     
     #Function that predicts the incident angle of the measurement given relative weights to channel
     #x and y of the current measurements.
-    def predict_angle(self, threshold=0.01):
+    def predict_angle(self):
         # Initialize variables
         max_theta = 0
         max_value = -np.inf
         current_max = -np.inf
+
+        # To store theta and corresponding max values for plotting
+        theta_values = []
+        max_values = []
 
         # Iterate over a range of angles (in radians)
         for theta in np.linspace(0, 2*np.pi, num=360):
@@ -79,22 +84,36 @@ class WaveAnalyzer:
             dot_product = np.dot(self.x, wx) + np.dot(self.y, wy)
 
             # Find maximum value
-            current_max = np.max(dot_product)
+            #current_max = np.max(dot_product)
+
+            #Use mean as metric for "max" values
+            current_max = np.mean(dot_product)
+
+            # Storing values for plotting
+            theta_values.append(theta)
+            max_values.append(current_max)
 
             # Update max_theta and max_value if a new maximum is found
             if current_max > max_value:
                 max_theta = theta
                 max_value = current_max
 
-            # Check if the difference is less than the threshold
-            if np.abs(current_max - max_value) < threshold:
-                break
+            # # Check if the difference is less than the threshold
+            # if np.abs(current_max - max_value) < threshold:
+            #     break
+
+        # Plotting
+        plt.plot(theta_values, max_values)
+        plt.xlabel('Theta (radians)')
+        plt.ylabel('Maximum Dot Product Value')
+        plt.title(f'Max Value vs Theta {self.degree}')
+        plt.show()
 
         # Set the current "maximum" and its corresponding theta
         self.maximum = max_value
-        self.max_theta = max_theta
+        self.max_theta = max_theta * 180 / np.pi
 
-        return max_theta, max_value
+        return self.max_theta, self.maximum 
     
     
     
@@ -107,5 +126,15 @@ class WaveAnalyzer:
 analyzer = WaveAnalyzer(degree=0)
 # To play, use: analyzer.play(analyzer.x, sample_rate) # assuming sample_rate is defined
 
-analyzer.predict_angle()
+max_theta, max_value = analyzer.predict_angle()
+
+print('max_theta',max_theta, 'max_value',max_value)
+
+# Example usage
+analyzer = WaveAnalyzer(degree=270)
+# To play, use: analyzer.play(analyzer.x, sample_rate) # assuming sample_rate is defined
+
+max_theta, max_value = analyzer.predict_angle()
+
+print('max_theta',max_theta, 'max_value',max_value)
 
