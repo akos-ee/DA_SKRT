@@ -38,6 +38,7 @@ class WaveAnalyzer:
         max_value = max(np.max(self.x),np.max(self.y),np.max(self.w))
         
         if max_value != 0:
+            # self.w *= 5     #cheeky times 5 because it's less sensitive
             self.x /= max_value
             self.y /= max_value
             self.w /= max_value
@@ -49,7 +50,7 @@ class WaveAnalyzer:
     #Given a degree value, this sets the current wave analyzer x,y, and w channel
     #With their respective measurements (normalized)
     def get_channels(self, degree, folder='Utilities/Measurements/'):
-        valid_channels = ['X', 'Y', 'W']
+        valid_channels = ['X', 'Y', 'W', 'e'] #put e so it doesn't crash
         file_directory = os.path.join(folder, f"{degree}deg")
 
         for file in os.listdir(file_directory):
@@ -121,12 +122,13 @@ class WaveAnalyzer:
 
        # Adjust angles based on w
        max_measurements = np.cos(max_thetas[:, np.newaxis]) * x + np.sin(max_thetas[:, np.newaxis]) * y
+
        add_w = np.abs(max_measurements + w)
        sub_w = np.abs(max_measurements - w)
 
-       complement = np.mean(add_w, axis=1) <= np.mean(sub_w, axis=1)
-       max_thetas[complement] = (max_thetas[complement] + np.pi) % (2 * np.pi)
-
+       complement = np.max(add_w, axis=1) >= np.max(sub_w, axis=1) #changed meann to max and flipped inequality
+       max_thetas[complement] = (max_thetas[complement] - np.pi) % (2 * np.pi)
+#here
        # Convert radians to degrees
        max_thetas_degrees = np.rad2deg(max_thetas)
        
@@ -162,7 +164,7 @@ class WaveAnalyzer:
     def filter(self, arr):
         i = 0
         avg=np.mean(arr)
-        print(avg)
+        # print(avg)
         while i < len(arr):
 
             if arr[i] > (avg+5) or arr[i] < (avg-5):

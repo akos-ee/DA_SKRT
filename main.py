@@ -89,7 +89,7 @@ if __name__ == '__main__':
     # angle = findangle(sigs)
     # print(angle)
 
-        analyzer = WaveAnalyzer(135)
+        analyzer = WaveAnalyzer(360)
 
         thetas = analyzer.theta_time()
         # analyzer.predicted_thetas = analyzer.filter(analyzer.predicted_thetas)
