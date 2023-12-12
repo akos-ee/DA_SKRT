@@ -3,7 +3,7 @@ import sounddevice as sd
 from scipy.io import wavfile
 import os
 import matplotlib.pyplot as plt
-
+import pyaudacity as pa
 
 
 
@@ -111,7 +111,7 @@ class WaveAnalyzer:
            dot_products = wx * x + wy * y  # This will be a 2D array
 
            # Use mean as metric for "max" values
-           #current_maxs = np.mean((dot_products), axis=1)
+           # current_maxs = np.mean((dot_products), axis=1)
            
            current_maxs = np.max((dot_products), axis=1)
 
@@ -134,6 +134,7 @@ class WaveAnalyzer:
        
 
        # Return maximum theta for each slice
+       print(max_thetas_degrees)
        return max_thetas_degrees
     
     
