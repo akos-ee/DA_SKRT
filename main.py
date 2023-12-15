@@ -71,7 +71,7 @@ def get3chanarr(folder):
 
     arrs[2] = (arrs[2] / num)
     b= arrs[1]
-    arrs[1]=6.144*arrs[2] #cheap eq to experiment
+    arrs[1]=arrs[2] #cheap eq to experiment
     arrs[2]=b
 
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     # angle = findangle(sigs)
     # print(angle)
 
-        analyzer = WaveAnalyzer(1270)
+        analyzer = WaveAnalyzer(1360)
 
         thetas = analyzer.theta_time()
         # analyzer.predicted_thetas = analyzer.filter(analyzer.predicted_thetas)

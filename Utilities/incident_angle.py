@@ -109,7 +109,7 @@ class WaveAnalyzer:
 
            # Perform dot product for all slices
            dot_products = wx * x + wy * y  # This will be a 2D array
-
+           # print(dot_products)
            # Use mean as metric for "max" values
            # current_maxs = np.mean((dot_products), axis=1)
            
@@ -130,11 +130,27 @@ class WaveAnalyzer:
        max_thetas[complement] = (max_thetas[complement] - np.pi) % (2 * np.pi)
 #here
        # Convert radians to degrees
-       max_thetas_degrees = np.rad2deg(max_thetas)
-       
+       max_thetas_degrees = 360 - np.rad2deg(max_thetas)
 
-       # Return maximum theta for each slice
-       print(max_thetas_degrees)
+       # for i in max_thetas_degrees:
+       #     if max_thetas_degrees[i]
+
+     # Return maximum theta for each slice
+     #   if value>300 and value<330:
+     #       max_thetas_degrees=(max_thetas_degrees+90) % 360
+     #   print(value)
+     #   if value>255 and value<285:
+     #       print("true")
+     #       max_thetas_degrees = (max_thetas_degrees + 180) % 360
+       # elif value>210 and value<240:
+       #     max_thetas_degrees = (max_thetas_degrees - 90)
+       # elif value>120 and value<150:
+       #     max_thetas_degrees = (max_thetas_degrees + 90)
+       # elif value>75 and value<105:
+       #     max_thetas_degrees = (max_thetas_degrees + 180) % 360
+       # elif value>30 and value<60:
+       #     max_thetas_degrees = (max_thetas_degrees - 90)+360
+
        return max_thetas_degrees
     
     
@@ -162,20 +178,14 @@ class WaveAnalyzer:
 
         return predicted_thetas
 
-    def filter(self, arr):
-        i = 0
-        avg=np.mean(arr)
-        # print(avg)
+    def filter(sel,arr):
+        i=0
         while i < len(arr):
-
-            if arr[i] > (avg+5) or arr[i] < (avg-5):
-                arr[i] = avg
-            if i > 5 and i + 2 < len(arr):
-                subarr = arr[i - 3:i + 2]
-                arr[i] = np.mean(subarr)
-
-            i = i + 1
-
+            if arr[i]>255 and arr[i]<285:
+                arr[i]=(arr[i]+180)%360
+            elif arr[i]>75 and arr[i]<105:
+                arr[i] = (arr[i] + 180) % 360
+            i+=1
         return arr
     def plot_theta(self):
         num_slices = len(self.x) // int(self.sample_rate * self.time_step)
@@ -197,7 +207,7 @@ class WaveAnalyzer:
             return
 
         # Plotting
-        plt.plot(times, self.filter(self.predicted_thetas))#filter
+        plt.plot(times,self.predicted_thetas)#filter
         plt.xlabel('Time (s)')
         plt.ylabel('Theta (degrees)')
         plt.title(f'Theta vs Time {self.degree}')
